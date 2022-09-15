@@ -1,0 +1,13 @@
+body {
+  font-family: monospace;
+}
+
+.item {
+  background: #ddd;
+  padding: 6px;
+  margin: 6px 0 6px 0;
+}
+
+.item a {
+  word-break: break-all;
+}
