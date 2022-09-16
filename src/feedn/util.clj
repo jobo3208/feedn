@@ -19,7 +19,9 @@
   (let [units [:weeks :days :hours :minutes :seconds]
         amounts (apply jt/as duration units)
         [unit amount] (first (filter #(-> % second pos?) (map vector units amounts)))]
-    [unit amount]))
+    (if (some? unit)
+      [unit amount]
+      [:seconds 0])))
 
 (defn human-duration-str [duration]
   "Return a human-readable string representation of a duration"
