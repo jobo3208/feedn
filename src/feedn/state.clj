@@ -1,3 +1,7 @@
 (ns feedn.state)
 
-(defonce state* (atom {}))
+(def initial-state
+  {:subs {}
+   :seen-items #{}})
+
+(defonce state* (atom initial-state))

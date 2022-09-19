@@ -40,7 +40,10 @@
 (defmethod render-item [:html :nitter]
   [_ item]
   (html
-    [:div.item
+    [:div {:style (str "background-color: " (:color item))
+           :class (if (not (:seen? item))
+                    "item unseen"
+                    "item")}
      [:h3 (:nitter/account-name item) " (" (:nitter/account-handle item) ")"]
      (when (:nitter/retweet? item)
        [:h4 "RT " (:nitter/creator item)])

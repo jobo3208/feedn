@@ -11,3 +11,18 @@ body {
 .item a {
   word-break: break-all;
 }
+
+.item.unseen {
+  border: 0.25em solid rgba(0,0,0, 0.5);
+}
+
+.unseen-count {
+  text-align: center;
+  border-bottom: 2px dashed #333;
+}
+
+.separator {
+  height: 2px;
+  border-top: 2px dashed #333;
+  margin: 1em 0 1em 0;
+}
