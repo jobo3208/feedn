@@ -11,3 +11,5 @@
     [fmt (:source item)]))
 
 (require 'feedn.source.nitter)
+(require 'feedn.source.rotoworld)
+(require 'feedn.source.invidious)
