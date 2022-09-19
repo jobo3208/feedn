@@ -19,6 +19,7 @@ body {
 .unseen-count {
   text-align: center;
   border-bottom: 2px dashed #333;
+  margin-bottom: 1em;
 }
 
 .separator {
