@@ -8,7 +8,7 @@
 
 (defn -main [& args]
   (let [config (load-config "config.edn")]
-    (reset! state* config)
+    (swap! state* merge config)
     (future (run-updater!))
     (run-server!)))
 
