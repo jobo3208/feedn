@@ -11,7 +11,10 @@
    :content (select-text item [:description])
    :author handle
    :link (select-text item [:link])
-   :guid (select-text item [:guid])
+   :guid (->> (select-text item [:guid])
+              (re-find #"status/(\d+)")
+              second
+              (str "nitter:"))
    :pub-date (jt/instant (jt/formatter :rfc-1123-date-time)
                          (select-text item [:pubDate]))
    :nitter/account-name name
@@ -23,7 +26,7 @@
   ([source channel]
    (fetch-items source channel {}))
   ([source channel opts]
-   (let [doc (xml/xml-resource (java.net.URL. (str "https://nitter.42l.fr/" channel "/rss")))
+   (let [doc (xml/xml-resource (java.net.URL. (str "https://twiiit.com/" channel "/rss")))
          byline (select-text doc [:channel :> :title])
          [_ name handle] (re-matches #"(.+) / (@.+)$" byline)
          items (->> (xml/select doc [:item])
