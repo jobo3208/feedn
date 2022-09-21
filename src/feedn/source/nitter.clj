@@ -1,7 +1,7 @@
 (ns feedn.source.nitter
   (:require [clojure.string :as string]
-            [feedn.source :refer [fetch-items render-item]]
-            [feedn.util :refer [ago-str select-text]]
+            [feedn.source :refer [fetch-items render-item render-item-footer-html]]
+            [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
             [net.cgrand.enlive-html :as xml]))
@@ -30,12 +30,6 @@
                     (map #(parse-item name handle %))
                     (map #(assoc % :source source :channel channel)))]
      items)))
-
-(defn render-item-footer-html [item]
-  (html
-    [:div.item-footer
-     [:p (ago-str (:pub-date item))]
-     [:a {:href (:link item)} "link"]]))
 
 (defmethod render-item [:html :nitter]
   [_ item]

@@ -1,6 +1,6 @@
 (ns feedn.source.rotoworld
   (:require [cheshire.core :as json]
-            [feedn.source :refer [fetch-items render-item]]
+            [feedn.source :refer [fetch-items render-item render-item-footer-html]]
             [feedn.util :refer [ago-str]]
             [hiccup.core :refer [html]]
             [java-time :as jt]))
@@ -31,12 +31,6 @@
      (->> items
           (map parse-item)
           (map #(assoc % :source source :channel channel))))))
-
-; TODO: generalize (this is copied from nitter)
-(defn render-item-footer-html [item]
-  (html
-    [:div.item-footer
-     [:p (ago-str (:pub-date item))]]))
 
 (defmethod render-item [:html :rotoworld]
   [_ item]

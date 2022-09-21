@@ -1,5 +1,5 @@
 (ns feedn.source.invidious
-  (:require [feedn.source :refer [fetch-items render-item]]
+  (:require [feedn.source :refer [fetch-items render-item render-item-footer-html]]
             [feedn.util :refer [ago-str select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -32,4 +32,4 @@
                     "item")}
      [:h3 (:author item)]
      [:p [:a {:href (:link item)} (:title item)]]
-     [:p (ago-str (:pub-date item))]]))
+     (render-item-footer-html item)]))

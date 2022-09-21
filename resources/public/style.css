@@ -16,6 +16,10 @@ body {
   border: 0.25em solid rgba(0,0,0, 0.5);
 }
 
+.item-footer {
+  padding: 0.5em 0 0.5em 0;
+}
+
 .unseen-count {
   text-align: center;
   border-bottom: 2px dashed #333;
@@ -26,4 +30,8 @@ body {
   height: 2px;
   border-top: 2px dashed #333;
   margin: 1em 0 1em 0;
+}
+
+a.emoji-link {
+  text-decoration: none;
 }
