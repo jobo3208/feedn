@@ -6,6 +6,9 @@
             [java-time :as jt]
             [net.cgrand.enlive-html :as xml]))
 
+(def NITTER-FETCH-DOMAIN "twiiit.com")
+(def NITTER-LINK-MEDIA-DOMAIN "nitter.net")
+
 (defn- parse-item [name handle item]
   {:title (select-text item [:title])
    :content (select-text item [:description])
@@ -22,16 +25,24 @@
    :nitter/creator (select-text item [:dc:creator])
    :nitter/retweet? (string/starts-with? (select-text item [:title]) "RT by")})
 
+(defn- replace-domain [from to v]
+  (if (string? v)
+    (string/replace v from to)
+    v))
+
 (defmethod fetch-items :nitter
   ([source channel]
    (fetch-items source channel {}))
   ([source channel opts]
-   (let [doc (xml/xml-resource (java.net.URL. (str "https://twiiit.com/" channel "/rss")))
+   (let [doc (xml/xml-resource (java.net.URL. (str "https://" NITTER-FETCH-DOMAIN "/" channel "/rss")))
          byline (select-text doc [:channel :> :title])
          [_ name handle] (re-matches #"(.+) / (@.+)$" byline)
+         link (select-text doc [:channel :> :link])
+         [_ _ domain _] (string/split link #"/")
          items (->> (xml/select doc [:item])
                     (map #(parse-item name handle %))
-                    (map #(assoc % :source source :channel channel)))]
+                    (map #(update-vals % (partial replace-domain domain NITTER-LINK-MEDIA-DOMAIN)))
+                    (map #(assoc % :source source :channel channel :nitter/domain domain)))]
      items)))
 
 (defmethod render-item [:html :nitter]
