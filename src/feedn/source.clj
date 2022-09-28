@@ -26,14 +26,14 @@
 (defn render-item-footer-html [item]
   (html
     [:div.item-footer
-     [:small (short-ago-str (:pub-date item))
-      " | "
-      [:a {:href (:link item) :class :emoji-link} link-emoji]
-      " | "
-      [:a {:href (str "?source=" (name (:source item)) "&channel=" (:channel item))
-           :class :emoji-link} channel-emoji]
-      " "
-      (interpose " " (map tag-link (:tags item)))]]))
+     (short-ago-str (:pub-date item))
+     " | "
+     [:a {:href (:link item) :class :emoji-link} link-emoji]
+     " | "
+     [:a {:href (str "?source=" (name (:source item)) "&channel=" (:channel item))
+          :class :emoji-link} channel-emoji]
+     " "
+     (interpose " " (map tag-link (:tags item)))]))
 
 (require 'feedn.source.nitter)
 (require 'feedn.source.rotoworld)
