@@ -37,11 +37,12 @@
 (defmethod render-item [:html :nitter]
   [_ item]
   (html
+    ; TODO: clean up class code; also move most of this out of source-specific render into a generic render
     [:div {:style (str "background-color: " (:color item))
            :class (if (not (:seen? item))
                     "item unseen"
                     "item")}
-     [:h3 (:nitter/account-name item) " (" (:nitter/account-handle item) ")"]
+     [:h3 {:id (:guid item)} (:nitter/account-name item) " (" (:nitter/account-handle item) ")"]
      (when (:nitter/retweet? item)
        [:h4 "RT " (:nitter/creator item)])
      (:content item)

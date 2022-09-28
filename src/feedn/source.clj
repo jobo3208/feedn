@@ -1,5 +1,6 @@
 (ns feedn.source
-  (:require [feedn.util :refer [short-ago-str]]
+  (:require [feedn.state :refer [state*]]
+            [feedn.util :refer [short-ago-str]]
             [hiccup.core :refer [html]]))
 
 (defmulti fetch-items
@@ -14,9 +15,13 @@
 
 (def link-emoji "\uD83D\uDD17")
 
-(def tag->emoji
-  {:football "\uD83C\uDFC8"
-   :dolphins "\uD83D\uDC2C"})
+(def channel-emoji "\uD83D\uDC64")
+
+(def tag-emoji "\uD83C\uDFF7")
+
+(defn tag-link [tag]
+  [:a {:href (str "?tag=" (name tag))
+       :class :emoji-link} (get-in @state* [:tags tag :emoji] tag-emoji)])
 
 (defn render-item-footer-html [item]
   (html
@@ -25,7 +30,10 @@
       " | "
       [:a {:href (:link item) :class :emoji-link} link-emoji]
       " | "
-      (interpose " " (map tag->emoji (:tags item)))]]))
+      [:a {:href (str "?source=" (name (:source item)) "&channel=" (:channel item))
+           :class :emoji-link} channel-emoji]
+      " "
+      (interpose " " (map tag-link (:tags item)))]]))
 
 (require 'feedn.source.nitter)
 (require 'feedn.source.rotoworld)

@@ -30,6 +30,6 @@
            :class (if (not (:seen? item))
                     "item unseen"
                     "item")}
-     [:h3 (:author item)]
+     [:h3 {:id (:guid item)} (:author item)]
      [:p [:a {:href (:link item)} (:title item)]]
      (render-item-footer-html item)]))

@@ -17,10 +17,10 @@ body {
 }
 
 .item-footer {
-  padding: 0.5em 0 0.5em 0;
+  padding: 0.75em 0 0.5em 0;
 }
 
-.unseen-count {
+.top-message {
   text-align: center;
   border-bottom: 2px dashed #333;
   margin-bottom: 1em;

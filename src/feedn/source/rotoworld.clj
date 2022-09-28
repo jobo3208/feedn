@@ -39,7 +39,7 @@
            :class (if (not (:seen? item))
                     "item unseen"
                     "item")}
-     [:h3 (:title item)]
+     [:h3 {:id (:guid item)} (:title item)]
      (:rotoworld/news item)
      (:rotoworld/analysis item)
      (render-item-footer-html item)]))
