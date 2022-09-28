@@ -1,11 +1,11 @@
 (ns feedn.frontend
-  (:require [compojure.core :refer [routes GET]]
+  (:require [clojure.java.io :as io]
+            [compojure.core :refer [routes GET]]
             [compojure.handler :refer [site]]
             [feedn.source :refer [render-item]]
             [feedn.timeline :refer [get-timeline mark-seen!]]
             [hiccup.core :refer [html]]
             [ring.adapter.jetty :refer [run-jetty]]
-            [ring.middleware.resource :refer [wrap-resource]]
             [ring.util.response :as resp]))
 
 (def FILTER-PARAMS [:source :channel :tag])
@@ -44,7 +44,7 @@
     (html
       [:html
        [:head
-        [:link {:rel "stylesheet" :href "style.css"}]]
+        [:style (slurp (io/resource "public/style.css"))]]
        [:body
         [:div.container
          [:div.top-message
@@ -69,9 +69,7 @@
         (index& req)))))
 
 (defn handler-wrapper [request]
-  (let [handler (-> handler
-                    (wrap-resource "public"))]
-    (handler request)))
+  (handler request))
 
 (defn run-server! []
   (run-jetty handler-wrapper {:host "0.0.0.0" :port 3000 :join? false}))
