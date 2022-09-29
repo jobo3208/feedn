@@ -12,7 +12,7 @@
   (let [state @state*]
     (->> (-> state :subs vals)
          (mapcat get-items-with-sub-ctx)
-         (map #(assoc % :seen? ((:seen-items state) (:guid %))))
+         (map #(assoc % :seen? (contains? (:seen-items state) (:guid %))))
          (sort-by (juxt (comp not :seen?) :pub-date))
          (reverse))))
 
