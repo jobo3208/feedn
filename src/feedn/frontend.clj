@@ -36,7 +36,7 @@
         filter-params (coerce-filter-params filter-params)
         filter-fn (if (seq filter-params)
                     (params->filter-fn filter-params)
-                    (fn [_] true))
+                    (comp not :hidden?))
         timeline (->> (get-timeline)
                       (filter filter-fn))
         [unseen seen] (split-with (comp not :seen?) timeline)]
