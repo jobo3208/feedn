@@ -1,18 +1,28 @@
 (ns feedn.timeline
-  (:require [feedn.state :refer [state*]]))
+  (:require [clojure.set :refer [union]]
+            [feedn.state :refer [state*]]))
 
-(defn- get-items-with-sub-ctx [sub]
-  "Get items from sub, merging sub properties into each item"
-  (let [items (:items sub)
-        sub-ctx (dissoc sub :items)]
-    (map #(merge sub-ctx %) items)))
+(defn- merge-ctx [state item]
+  "Merge context from sub, tags, seen, etc. into item"
+  (let [{:keys [source channel]} item
+        sub (get-in state [:subs [source channel]])
+        sub-ctx (dissoc sub :items)
+        sub-tags (get sub :tags #{})
+        item-tags (get item :tags #{})
+        tags (union sub-tags item-tags)
+        get-tag-ctx (fn [tag]
+                      (-> (get-in state [:tags tag] {})
+                          (dissoc :emoji)))
+        tags-ctx (apply merge (map get-tag-ctx tags))
+        seen-ctx {:seen? (contains? (:seen-items state) (:guid item))}]
+    (merge tags-ctx sub-ctx item seen-ctx)))
 
 (defn get-timeline []
   "Get all items from all subs"
   (let [state @state*]
     (->> (-> state :subs vals)
-         (mapcat get-items-with-sub-ctx)
-         (map #(assoc % :seen? (contains? (:seen-items state) (:guid %))))
+         (mapcat :items)
+         (map (partial merge-ctx state))
          (sort-by (juxt (comp not :seen?) :pub-date))
          (reverse))))
 
