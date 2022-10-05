@@ -44,6 +44,7 @@
     (html
       [:html
        [:head
+        [:meta {:name :viewport :content "width=device-width, initial-scale=1.0"}]
         [:style (slurp (io/resource "public/style.css"))]]
        [:body
         [:div.container
