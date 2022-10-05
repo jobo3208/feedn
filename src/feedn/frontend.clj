@@ -1,8 +1,10 @@
 (ns feedn.frontend
   (:require [clojure.java.io :as io]
-            [compojure.core :refer [routes GET]]
+            [compojure.core :refer [routes GET POST]]
             [compojure.handler :refer [site]]
+            [feedn.limit :as limit]
             [feedn.source :refer [render-item]]
+            [feedn.state :refer [state*]]
             [feedn.timeline :refer [get-timeline mark-seen!]]
             [hiccup.core :refer [html]]
             [ring.adapter.jetty :refer [run-jetty]]
@@ -31,7 +33,8 @@
 (def clear-filters-emoji "\uD83D\uDEAB")
 
 (defn index& [req]
-  (let [params (:params req)
+  (let [state @state*
+        params (:params req)
         filter-params (select-keys params FILTER-PARAMS)
         filter-params (coerce-filter-params filter-params)
         filter-fn (if (seq filter-params)
@@ -39,8 +42,9 @@
                     (comp not :hidden?))
         timeline (->> (get-timeline)
                       (filter filter-fn))
-        [unseen seen] (split-with (comp not :seen?) timeline)]
-    (mark-seen! timeline)
+        [after-cutoff before-cutoff] (split-with (partial limit/after-cutoff? state) timeline)
+        [unseen seen] (split-with (comp not :seen?) before-cutoff)]
+    (mark-seen! unseen)
     (html
       [:html
        [:head
@@ -48,8 +52,11 @@
         [:style (slurp (io/resource "public/style.css"))]]
        [:body
         [:div.container
-         [:div.top-message
-          [:p
+         [:div.page-header
+          [:div
+           [:form.update-form {:action "/update" :method :post}
+            [:button {:type :submit} "update"]]]
+          [:div {:style "text-align: center;"}
            (if (seq unseen)
              [:a {:href (str "#" (-> unseen last :guid))}
               (if (= 1 (count unseen))
@@ -57,7 +64,9 @@
                 (str (count unseen) " new items"))]
              "no new items")
            (when (seq filter-params)
-            [:span " " [:a {:href "/" :class :emoji-link :title "clear filters"} clear-filters-emoji]])]]
+            [:span " " [:a {:href "/" :class :emoji-link :title "clear filters"} clear-filters-emoji]])]
+          [:div {:style "text-align: right;"}
+           [:span (:limit/updates-remaining state)]]]
          (map #(render-item :html %) unseen)
          (when (seq unseen)
            [:div.separator])
@@ -67,7 +76,10 @@
   (site
     (routes
       (GET "/" [_ :as req]
-        (index& req)))))
+        (index& req))
+      (POST "/update" []
+        (swap! state* limit/register-update)
+        (resp/redirect "/")))))
 
 (defn handler-wrapper [request]
   (handler request))

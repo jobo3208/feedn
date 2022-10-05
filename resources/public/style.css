@@ -20,18 +20,36 @@ body {
   padding: 0.75em 0 0.5em 0;
 }
 
-.top-message {
-  text-align: center;
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.5em;
   border-bottom: 2px dashed #333;
-  margin-bottom: 1em;
+  margin-bottom: 0.5em;
+}
+
+.page-header > div {
+  flex-basis: 33%;
 }
 
 .separator {
   height: 2px;
   border-top: 2px dashed #333;
-  margin: 1em 0 1em 0;
+  margin: 0.5em 0 0.5em 0;
 }
 
 a.emoji-link {
   text-decoration: none;
+}
+
+.update-form {
+  display: inline;
+}
+
+.update-form button {
+  all: unset;
+  display: inline;
+  cursor: pointer;
+  text-decoration: underline;
+  color: rgb(0, 0, 238);
 }
