@@ -15,13 +15,13 @@
 (defn register-update [state]
   (let [state (if (window-closed? state)
                 (reset-limit state)
+                state)
+        state (if (pos? (:limit/updates-remaining state))
+                (-> state
+                    (update :limit/updates-remaining dec)
+                    (assoc :limit/cutoff-time (jt/instant)))
                 state)]
-    (-> state
-        (update :limit/updates-remaining dec)
-        (assoc :limit/cutoff-time (jt/instant)))))
-
-(defn can-update? [state]
-  (pos? (:limit/updates-remaining state)))
+    state))
 
 (defn after-cutoff? [state item]
   (jt/after? (:pub-date item) (:limit/cutoff-time state)))
