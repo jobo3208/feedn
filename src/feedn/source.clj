@@ -8,10 +8,15 @@
   (fn [source channel & opts]
     source))
 
-(defmulti render-item
-  "Render an item for display in the given format. Dispatches on format and item's source"
+(defmulti render-item-body
+  "Render the body of an item for display in the given format. Dispatches on format and item's source"
   (fn [fmt item & opts]
     [fmt (:source item)]))
+
+(defmulti render-item
+  "Render item for display in the given format. Dispatches on format"
+  (fn [fmt item & opts]
+    fmt))
 
 (def link-emoji "\uD83D\uDD17")
 
@@ -34,6 +39,16 @@
           :class :emoji-link} channel-emoji]
      " "
      (interpose " " (map tag-link (:tags item)))]))
+
+(defmethod render-item :html
+  [_ item]
+  (html
+    [:div {:style (str "background-color: " (:color item))
+           :class (if (not (:seen? item))
+                    "item unseen"
+                    "item")}
+     (render-item-body :html item)
+     (render-item-footer-html item)]))
 
 (require 'feedn.source.nitter)
 (require 'feedn.source.rotoworld)

@@ -1,5 +1,5 @@
 (ns feedn.source.invidious
-  (:require [feedn.source :refer [fetch-items render-item render-item-footer-html]]
+  (:require [feedn.source :refer [fetch-items render-item-body]]
             [feedn.util :refer [ago-str select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -23,13 +23,9 @@
          items (map #(assoc % :source source :channel channel) items)]
      items)))
 
-(defmethod render-item [:html :invidious]
+(defmethod render-item-body [:html :invidious]
   [_ item]
   (html
-    [:div {:style (str "background-color: " (:color item))
-           :class (if (not (:seen? item))
-                    "item unseen"
-                    "item")}
+    [:div.item-body
      [:h3 {:id (:guid item)} (:author item)]
-     [:p [:a {:href (:link item)} (:title item)]]
-     (render-item-footer-html item)]))
+     [:p [:a {:href (:link item)} (:title item)]]]))

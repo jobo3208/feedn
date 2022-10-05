@@ -1,6 +1,6 @@
 (ns feedn.source.rotoworld
   (:require [cheshire.core :as json]
-            [feedn.source :refer [fetch-items render-item render-item-footer-html]]
+            [feedn.source :refer [fetch-items render-item-body]]
             [feedn.util :refer [ago-str]]
             [hiccup.core :refer [html]]
             [java-time :as jt]))
@@ -32,14 +32,10 @@
           (map parse-item)
           (map #(assoc % :source source :channel channel))))))
 
-(defmethod render-item [:html :rotoworld]
+(defmethod render-item-body [:html :rotoworld]
   [_ item]
   (html
-    [:div {:style (str "background-color: " (:color item))
-           :class (if (not (:seen? item))
-                    "item unseen"
-                    "item")}
+    [:div.item-body
      [:h3 {:id (:guid item)} (:title item)]
      (:rotoworld/news item)
-     (:rotoworld/analysis item)
-     (render-item-footer-html item)]))
+     (:rotoworld/analysis item)]))
