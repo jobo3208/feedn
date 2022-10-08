@@ -16,12 +16,22 @@
   "Advance timers for all subs"
   (update state :subs #(update-vals % tick-sub)))
 
+(defn- new-items-are-stale? [sub items]
+  "Return true if items are older than the items in the sub (happens w/ certain nitter instances sometimes)"
+  (and (seq (:items sub))
+       (seq items)
+       (jt/after?
+         (apply jt/max (map :pub-date (:items sub)))
+         (apply jt/max (map :pub-date items)))))
+
 (defn- update-items [sub items]
   "Add items to sub by merging new into old. Old items that are not in the passed collection are removed."
-  (let [existing-items (get sub :items [])
-        existing-items-by-guid (index-by :guid existing-items)
-        items (mapv #(merge (get existing-items-by-guid (:guid %) {}) %) items)]
-    (assoc sub :items items)))
+  (if (new-items-are-stale? sub items)
+    sub
+    (let [existing-items (get sub :items [])
+          existing-items-by-guid (index-by :guid existing-items)
+          items (mapv #(merge (get existing-items-by-guid (:guid %) {}) %) items)]
+      (assoc sub :items items))))
 
 (defn- fetch-and-update! [[source channel]]
   "Fetch latest items for [source channel] and add to state"
