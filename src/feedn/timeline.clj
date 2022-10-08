@@ -1,6 +1,6 @@
 (ns feedn.timeline
-  (:require [clojure.set :refer [union]]
-            [feedn.state :refer [state*]]))
+  (:require [clojure.set :refer [intersection union]]
+            [feedn.state :refer [item-guid-to-path-map state*]]))
 
 (defn- merge-ctx [state item]
   "Merge context from sub, tags, seen, etc. into item"
@@ -30,3 +30,8 @@
   "Mark items as seen"
   (let [guids (map :guid items)]
     (swap! state* update :seen-items #(into % guids))))
+
+(defn prune-seen [state]
+  (let [{:keys [seen-items]} state
+        current-guids (into #{} (keys (item-guid-to-path-map state)))]
+    (assoc state :seen-items (intersection seen-items current-guids))))

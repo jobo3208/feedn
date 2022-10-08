@@ -1,6 +1,7 @@
 (ns feedn.updater
   (:require [feedn.source :refer [fetch-items]]
             [feedn.state :refer [state*]]
+            [feedn.timeline :refer [prune-seen]]
             [feedn.util :refer [index-by]]
             [java-time :as jt]))
 
@@ -49,6 +50,7 @@
                         (keys))]
       (dorun (map #(future (fetch-and-update! %)) to-fetch))
       (Thread/sleep 1000)
+      (swap! state* prune-seen)
       (recur))))
 
 #_ (tick-subs @state*)
