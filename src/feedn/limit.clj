@@ -1,6 +1,8 @@
 (ns feedn.limit
   (:require [java-time :as jt]))
 
+(def UPDATES_PER_DAY 24)
+
 (defn- midnight-today []
   (jt/local-date-time (jt/local-date) (jt/local-time 0)))
 
@@ -9,7 +11,7 @@
 
 (defn reset-limit [state]
   (assoc state :limit/window-start (midnight-today)
-               :limit/updates-remaining 16
+               :limit/updates-remaining (get state :limit/updates-per-day UPDATES_PER_DAY)
                :limit/cutoff-time (or (:limit/cutoff-time state) (jt/instant))))
 
 (defn register-update [state]
