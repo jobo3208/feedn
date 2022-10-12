@@ -8,6 +8,8 @@
 (set! *print-length* 10)
 
 (defn -main [& args]
+  (System/setProperty "sun.net.client.defaultConnectTimeout" "5000")
+  (System/setProperty "sun.net.client.defaultReadTimeout" "5000")
   (let [config (load-config "config.edn")]
     (swap! state* merge config)
     (swap! state* reset-limit)
