@@ -50,6 +50,7 @@
      (render-item-body :html item)
      (render-item-footer-html item)]))
 
+(require 'feedn.source.dumpor)
+(require 'feedn.source.invidious)
 (require 'feedn.source.nitter)
 (require 'feedn.source.rotoworld)
-(require 'feedn.source.invidious)
