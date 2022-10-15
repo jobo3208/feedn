@@ -41,20 +41,31 @@
      :guid guid
      :link link}))
 
+(defn- parse [source channel opts doc]
+  (let [account-name (select-text doc [:.user :h1])
+        account-handle (select-text doc [:.user :h4])
+        items (->> (xml/select doc [[:.card (xml/but :.ads)]])
+                   (map #(parse-item %))
+                   (map #(assoc %
+                                :source source
+                                :channel channel
+                                :dumpor/account-name account-name
+                                :dumpor/account-handle account-handle)))]
+     items))
+
 (defmethod fetch-items :dumpor
   ([source channel]
    (fetch-items source channel {}))
   ([source channel opts]
-   (let [doc (xml/html-resource (java.net.URL. (str "https://dumpor.com/v/" channel)))
-         account-name (select-text doc [:.user :h1])
-         account-handle (select-text doc [:.user :h4])
-         items (->> (xml/select doc [[:.card (xml/but :.ads)]])
-                    (map #(parse-item %))
-                    (map #(assoc %
-                                 :source source
-                                 :channel channel
-                                 :dumpor/account-name account-name
-                                 :dumpor/account-handle account-handle)))]
+   (let [url (java.net.URL. (str "https://dumpor.com/v/" channel))
+         doc (try
+               (xml/html-resource url)
+               (catch Exception e
+                 (throw (ex-info "fetch error" {:type :fetch :url url} e))))
+         items (try
+                 (parse source channel opts doc)
+                 (catch Exception e
+                   (throw (ex-info "parse error" {:type :parse} e))))]
      items)))
 
 (defmethod render-item-body [:html :dumpor]

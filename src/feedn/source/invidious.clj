@@ -13,14 +13,25 @@
    :pub-date (jt/instant (jt/formatter :iso-offset-date-time)
                          (select-text item [:published]))})
 
+(defn- parse [source channel opts doc]
+  (let [entries (xml/select doc [:entry])
+        items (map parse-item entries)
+        items (map #(assoc % :source source :channel channel) items)]
+     items))
+
 (defmethod fetch-items :invidious
   ([source channel]
    (fetch-items source channel {}))
   ([source channel opts]
-   (let [doc (xml/xml-resource (java.net.URL. (str "https://yewtu.be/feed/channel/" channel)))
-         entries (xml/select doc [:entry])
-         items (map parse-item entries)
-         items (map #(assoc % :source source :channel channel) items)]
+   (let [url (java.net.URL. (str "https://yewtu.be/feed/channel/" channel))
+         doc (try
+               (xml/xml-resource url)
+               (catch Exception e
+                 (throw (ex-info "fetch error" {:type :fetch :url url} e))))
+         items (try
+                 (parse source channel opts doc)
+                 (catch Exception e
+                   (throw (ex-info "parse error" {:type :parse} e))))]
      items)))
 
 (defmethod render-item-body [:html :invidious]

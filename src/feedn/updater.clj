@@ -3,7 +3,8 @@
             [feedn.state :refer [state*]]
             [feedn.timeline :refer [prune-seen]]
             [feedn.util :refer [index-by]]
-            [java-time :as jt]))
+            [java-time :as jt]
+            [taoensso.timbre :refer [debug error]]))
 
 (defn- tick-sub [{:keys [period timer] :as sub}]
   "Advance timer for sub"
@@ -36,7 +37,13 @@
 
 (defn- fetch-and-update! [[source channel]]
   "Fetch latest items for [source channel] and add to state"
-  (let [items (fetch-items source channel)]
+  (let [items (try
+                (fetch-items source channel)
+                (catch Exception e
+                  (case (:type (ex-data e))
+                    :fetch (debug (str (ex-cause e)) [source channel])
+                    (error e [source channel]))
+                  (throw e)))]
     (swap! state* update-in [:subs [source channel]] #(-> %
                                                           (update-items items)
                                                           (assoc :last-fetched (jt/instant))))))
