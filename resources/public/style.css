@@ -53,3 +53,7 @@ a.emoji-link {
   text-decoration: underline;
   color: rgb(0, 0, 238);
 }
+
+.dumpor-img {
+  max-width: 100%;
+}

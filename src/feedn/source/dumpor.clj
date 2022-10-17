@@ -33,8 +33,10 @@
         guid (str "dumpor:" (last (string/split rel-link #"/")))]
     {:content (-> content
                   (xml/at
+                    [:.content__btns] nil
+                    [:*] (xml/remove-attr :class :style)
                     [xml/root :> :a] (xml/set-attr :href link)
-                    [:.content__btns] nil)
+                    [xml/root :> :a :> :img] (xml/add-class "dumpor-img"))
                   (xml/emit*)
                   (as-> s (apply str s)))
      :pub-date (parse-ago-str (select-text item [(xml/has [:> :.bx-time]) :span]))
