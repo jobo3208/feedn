@@ -11,7 +11,8 @@
 (defn -main [& args]
   (System/setProperty "sun.net.client.defaultConnectTimeout" "5000")
   (System/setProperty "sun.net.client.defaultReadTimeout" "5000")
-  (merge-config! {:appenders {:spit (spit-appender {:fname "log"})}})
+  (merge-config! {:appenders {:spit (spit-appender {:fname "log"})}
+                  :min-level :info})
   (let [config (load-config "config.edn")]
     (swap! state* merge config)
     (swap! state* reset-limit)
