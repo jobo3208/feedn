@@ -32,6 +32,10 @@
     sub
     (let [existing-items (get sub :items [])
           existing-items-by-guid (index-by :guid existing-items)
+          items (reverse (sort-by :pub-date items))
+          items (if (:max-items sub)
+                  (take (:max-items sub) items)
+                  items)
           items (mapv #(merge (get existing-items-by-guid (:guid %) {}) %) items)]
       (assoc sub :items items))))
 
