@@ -8,6 +8,7 @@
             [feedn.timeline :refer [get-timeline mark-seen!]]
             [hiccup.core :refer [html]]
             [ring.adapter.jetty :refer [run-jetty]]
+            [ring.middleware.resource :refer [wrap-resource]]
             [ring.util.response :as resp]))
 
 (def FILTER-PARAMS [:source :channel :tag])
@@ -37,7 +38,12 @@
     [:html
      [:head
       [:meta {:name :viewport :content "width=device-width, initial-scale=1.0"}]
-      [:style (slurp (io/resource "public/style.css"))]]
+      [:link {:rel "apple-touch-icon" :sizes "180x180" :href "/apple-touch-icon.png"}]
+      [:link {:rel "icon" :type "image/png" :sizes "32x32" :href "/favicon-32x32.png"}]
+      [:link {:rel "icon" :type "image/png" :sizes "16x16" :href "/favicon-16x16.png"}]
+      [:link {:rel "manifest" :href "/site.webmanifest"}]
+      [:style (slurp (io/resource "public/style.css"))]
+      [:title "feedn"]]
      [:body body]]))
 
 (defn index-view [req]
@@ -107,7 +113,9 @@
           (resp/redirect "/"))))))
 
 (defn handler-wrapper [request]
-  (handler request))
+  (let [handler (-> handler
+                    (wrap-resource "public"))]
+    (handler request)))
 
 (defn run-server! []
   (run-jetty handler-wrapper {:host "0.0.0.0" :port 3000 :join? false}))
