@@ -32,6 +32,10 @@ body {
   flex-basis: 33%;
 }
 
+.page-header a:link, .page-header a:visited, .page-header a:hover, .page-header a:active {
+  color: rgb(0, 0, 238);
+}
+
 .separator {
   height: 2px;
   border-top: 2px dashed #333;
@@ -42,11 +46,11 @@ a.emoji-link {
   text-decoration: none;
 }
 
-.update-form {
+form.post-link {
   display: inline;
 }
 
-.update-form button {
+form.post-link button {
   all: unset;
   display: inline;
   cursor: pointer;

@@ -32,30 +32,36 @@
 
 (def clear-filters-emoji "\uD83D\uDEAB")
 
-(defn index& [req]
+(defn base-tpl [body]
+  (html
+    [:html
+     [:head
+      [:meta {:name :viewport :content "width=device-width, initial-scale=1.0"}]
+      [:style (slurp (io/resource "public/style.css"))]]
+     [:body body]]))
+
+(defn index-view [req]
   (let [state @state*
         params (:params req)
         filter-params (select-keys params FILTER-PARAMS)
         filter-params (coerce-filter-params filter-params)
         filter-fn (if (seq filter-params)
                     (params->filter-fn filter-params)
-                    (comp not :hidden?))
+                    (constantly true))
         timeline (->> (get-timeline)
-                      (filter filter-fn))
+                      (filter filter-fn)
+                      (filter #(>= (:volume state) (:min-volume %))))
         [after-cutoff before-cutoff] (split-with (partial limit/after-cutoff? state) timeline)
         [unseen seen] (split-with (comp not :seen?) before-cutoff)]
     (mark-seen! unseen)
-    (html
-      [:html
-       [:head
-        [:meta {:name :viewport :content "width=device-width, initial-scale=1.0"}]
-        [:style (slurp (io/resource "public/style.css"))]]
-       [:body
+    (base-tpl
+      (html
         [:div.container
          [:div.page-header
           [:div
-           [:form.update-form {:action "/update" :method :post}
-            [:button {:type :submit} "update"]]]
+           [:form.post-link {:action "/update" :method :post}
+            [:button {:type :submit} "update"]
+            (str " (" (:limit/updates-remaining state) ")")]]
           [:div {:style "text-align: center;"}
            (if (seq unseen)
              [:a {:href (str "#" (-> unseen last :guid))}
@@ -66,20 +72,39 @@
            (when (seq filter-params)
             [:span " " [:a {:href "/" :class :emoji-link :title "clear filters"} clear-filters-emoji]])]
           [:div {:style "text-align: right;"}
-           [:span (:limit/updates-remaining state)]]]
+           [:a {:href "/settings"} "settings"]]]
          (map #(render-item :html %) unseen)
          (when (seq unseen)
            [:div.separator])
-         (map #(render-item :html %) seen)]]])))
+         (map #(render-item :html %) seen)]))))
+
+(defn settings-view []
+  (base-tpl
+    (html
+      [:div.container
+       [:div.page-header "settings"]
+       [:form {:method :post}
+        [:dl
+         [:dt "volume"]
+         [:dd
+          [:input {:type :range :min 1 :max 3 :step 1 :name "volume" :value (:volume @state*)}]]]
+        [:button {:type :submit} "save"]]])))
 
 (def handler
   (site
     (routes
       (GET "/" [_ :as req]
-        (index& req))
+        (index-view req))
       (POST "/update" []
         (swap! state* limit/register-update)
-        (resp/redirect "/")))))
+        (resp/redirect "/"))
+      (GET "/settings" []
+        (settings-view))
+      (POST "/settings" [_ :as req]
+        (let [volume (-> req :params :volume (Integer.))]
+          (assert (#{1 2 3} volume))
+          (swap! state* assoc :volume volume)
+          (resp/redirect "/"))))))
 
 (defn handler-wrapper [request]
   (handler request))
