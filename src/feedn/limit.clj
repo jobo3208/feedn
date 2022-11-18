@@ -1,31 +1,29 @@
 (ns feedn.limit
   (:require [java-time :as jt]))
 
-(def UPDATES_PER_DAY 24)
-
 (defn- midnight-today []
   (jt/local-date-time (jt/local-date) (jt/local-time 0)))
 
-(defn window-closed? [state]
-  (jt/after? (midnight-today) (:limit/window-start state)))
+(defn window-closed? [{:keys [limit-window-start] :as state}]
+  (or (nil? limit-window-start)
+      (jt/after? (midnight-today) limit-window-start)))
 
-(defn reset-limit [state]
-  (assoc state :limit/window-start (midnight-today)
-               :limit/updates-remaining (get state :limit/updates-per-day UPDATES_PER_DAY)
-               :limit/cutoff-time (or (:limit/cutoff-time state) (jt/instant))))
+(defn reset-limit [state config]
+  (assoc state :limit-window-start (midnight-today)
+               :updates-remaining (:updates-remaining config)
+               :limit-cutoff-time (or (:limit-cutoff-time state) (jt/instant))))
 
-(defn register-update [state]
+(defn register-update [state config]
   (let [state (if (window-closed? state)
-                (reset-limit state)
+                (reset-limit state config)
                 state)
-        state (if (pos? (:limit/updates-remaining state))
+        state (if (pos? (:updates-remaining state))
                 (-> state
-                    (update :limit/updates-remaining dec)
-                    (assoc :limit/cutoff-time (jt/instant)))
+                    (update :updates-remaining dec)
+                    (assoc :limit-cutoff-time (jt/instant)))
                 state)]
     state))
 
-(defn after-cutoff? [state item]
-  (jt/after? (:pub-date item) (:limit/cutoff-time state)))
-
-#_ (swap! feedn.state/state* reset-limit)
+(defn after-cutoff? [{:keys [limit-cutoff-time] :as state} item]
+  (or (nil? limit-cutoff-time)
+      (jt/after? (:pub-date item) limit-cutoff-time)))

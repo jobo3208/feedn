@@ -1,5 +1,5 @@
 (ns feedn.source.invidious
-  (:require [feedn.source :refer [fetch-items render-item-body]]
+  (:require [feedn.source.api :refer [fetch-items render-item-body]]
             [feedn.util :refer [ago-str select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -13,26 +13,24 @@
    :pub-date (jt/instant (jt/formatter :iso-offset-date-time)
                          (select-text item [:published]))})
 
-(defn- parse [source channel opts doc]
+(defn- parse [source channel doc]
   (let [entries (xml/select doc [:entry])
         items (map parse-item entries)
         items (map #(assoc % :source source :channel channel) items)]
      items))
 
 (defmethod fetch-items :invidious
-  ([source channel]
-   (fetch-items source channel {}))
-  ([source channel opts]
-   (let [url (java.net.URL. (str "https://yewtu.be/feed/channel/" channel))
-         doc (try
-               (xml/xml-resource url)
-               (catch Exception e
-                 (throw (ex-info "fetch error" {:type :fetch :url url} e))))
-         items (try
-                 (parse source channel opts doc)
-                 (catch Exception e
-                   (throw (ex-info "parse error" {:type :parse} e))))]
-     items)))
+  [source channel]
+  (let [url (java.net.URL. (str "https://yewtu.be/feed/channel/" channel))
+        doc (try
+              (xml/xml-resource url)
+              (catch Exception e
+                (throw (ex-info "fetch error" {:type :fetch :url url} e))))
+        items (try
+                (parse source channel doc)
+                (catch Exception e
+                  (throw (ex-info "parse error" {:type :parse} e))))]
+    items))
 
 (defmethod render-item-body [:html :invidious]
   [_ item]

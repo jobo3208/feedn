@@ -9,6 +9,13 @@
   ([key-fn val-fn coll]
    (into {} (map (juxt key-fn val-fn) coll))))
 
+(defn deep-merge
+  "Recursively merges maps. If vals are not maps, the last value wins."
+  [& vals]
+  (if (every? map? vals)
+    (apply merge-with deep-merge vals)
+    (last vals)))
+
 (defn select-text
   "Return the text contained within (xml/select node selector)"
   [node selector]

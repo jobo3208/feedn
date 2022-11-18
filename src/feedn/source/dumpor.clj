@@ -1,6 +1,6 @@
 (ns feedn.source.dumpor
   (:require [clojure.string :as string]
-            [feedn.source :refer [fetch-items render-item-body]]
+            [feedn.source.api :refer [fetch-items render-item-body]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -43,7 +43,7 @@
      :guid guid
      :link link}))
 
-(defn- parse [source channel opts doc]
+(defn- parse [source channel doc]
   (let [account-name (select-text doc [:.user :h1])
         account-handle (select-text doc [:.user :h4])
         items (->> (xml/select doc [[:.card (xml/but :.ads)]])
@@ -56,19 +56,17 @@
      items))
 
 (defmethod fetch-items :dumpor
-  ([source channel]
-   (fetch-items source channel {}))
-  ([source channel opts]
-   (let [url (java.net.URL. (str "https://dumpor.com/v/" channel))
-         doc (try
-               (xml/html-resource url)
-               (catch Exception e
-                 (throw (ex-info "fetch error" {:type :fetch :url url} e))))
-         items (try
-                 (parse source channel opts doc)
-                 (catch Exception e
-                   (throw (ex-info "parse error" {:type :parse} e))))]
-     items)))
+  [source channel]
+  (let [url (java.net.URL. (str "https://dumpor.com/v/" channel))
+        doc (try
+              (xml/html-resource url)
+              (catch Exception e
+                (throw (ex-info "fetch error" {:type :fetch :url url} e))))
+        items (try
+                (parse source channel doc)
+                (catch Exception e
+                  (throw (ex-info "parse error" {:type :parse} e))))]
+    items))
 
 (defmethod render-item-body [:html :dumpor]
   [_ item]

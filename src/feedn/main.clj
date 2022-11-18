@@ -1,24 +1,15 @@
 (ns feedn.main
-  (:require [feedn.config :refer [load-config]]
+  (:require [feedn.config :refer [config_ load-config]]
             [feedn.frontend :refer [run-server!]]
-            [feedn.limit :refer [reset-limit]]
-            [feedn.state :refer [state*]]
             [feedn.updater :refer [run-updater!]]
-            [taoensso.timbre :refer [merge-config! spit-appender]]))
+            [taoensso.timbre :as log]))
 
-(set! *print-length* 10)
+(System/setProperty "sun.net.client.defaultConnectTimeout" "5000")
+(System/setProperty "sun.net.client.defaultReadTimeout" "5000")
 
 (defn -main [& args]
-  (System/setProperty "sun.net.client.defaultConnectTimeout" "5000")
-  (System/setProperty "sun.net.client.defaultReadTimeout" "5000")
-  (merge-config! {:appenders {:spit (spit-appender {:fname "log"})}
-                  :min-level :info})
-  (let [config (load-config "config.edn")]
-    (swap! state* merge config)
-    (swap! state* reset-limit)
-    (future (run-updater!))
-    (run-server!)))
-
-#_ (-main)
-
-#_ (deref state*)
+  (log/merge-config! {:appenders {:spit (log/spit-appender {:fname "log"})}
+                      :min-level :info})
+  (swap! config_ load-config "config.edn")
+  (future (run-updater!))
+  (run-server!))

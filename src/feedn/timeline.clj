@@ -1,37 +1,48 @@
 (ns feedn.timeline
-  (:require [clojure.set :refer [intersection union]]
-            [feedn.state :refer [item-guid-to-path-map state*]]))
+  (:require [clojure.set :refer [union]]
+            [feedn.sub :refer [iter-subs]]))
 
-(defn- merge-ctx [state item]
-  "Merge context from sub, tags, seen, etc. into item"
+(defn merge-ctx
+  "Merge context from root config, source, tags, and channel into item"
+  [config item]
   (let [{:keys [source channel]} item
-        sub (get-in state [:subs [source channel]])
-        sub-ctx (dissoc sub :items)
-        sub-tags (get sub :tags #{})
+        root-ctx (-> config :subs (dissoc :sources))
+        source-ctx (-> config (get-in [:subs :sources source]) (dissoc :channels))
+        channel-ctx (-> config (get-in [:subs :sources source :channels channel]))
+        channel-tags (get channel-ctx :tags #{})
         item-tags (get item :tags #{})
-        tags (union sub-tags item-tags)
+        tags (union channel-tags item-tags)
         get-tag-ctx (fn [tag]
-                      (-> (get-in state [:tags tag] {})
+                      (-> (get-in config [:tags tag] {})
                           (dissoc :emoji)))
-        tags-ctx (apply merge (map get-tag-ctx tags))
-        seen-ctx {:seen? (contains? (:seen-items state) (:guid item))}]
-    (merge tags-ctx sub-ctx item seen-ctx)))
+        tags-ctx (apply merge (map get-tag-ctx tags))]
+    (merge root-ctx source-ctx tags-ctx channel-ctx item)))
 
-(defn get-timeline []
+(defn get-timeline
   "Get all items from all subs"
-  (let [state @state*]
-    (->> (-> state :subs vals)
-         (mapcat :items)
-         (map (partial merge-ctx state))
-         (sort-by (juxt (comp not :seen?) :pub-date))
-         (reverse))))
+  [state config]
+  (->> state
+       iter-subs
+       (map last)
+       (mapcat :items)
+       (map (partial merge-ctx config))
+       (sort-by (juxt (comp not :seen?) :pub-date))
+       (reverse)))
 
-(defn mark-seen! [items]
-  "Mark items as seen"
-  (let [guids (map :guid items)]
-    (swap! state* update :seen-items #(into % guids))))
+(defn item-guid-to-path-map [state]
+  (->> state
+       iter-subs
+       (map (fn [[source channel sub]]
+              (for [[i item] (map-indexed vector (:items sub))]
+                [(:guid item) [:subs :sources source :channels channel :items i]])))
+       (apply concat)
+       (into {})))
 
-(defn prune-seen [state]
-  (let [{:keys [seen-items]} state
-        current-guids (into #{} (keys (item-guid-to-path-map state)))]
-    (assoc state :seen-items (intersection seen-items current-guids))))
+(defn mark-seen [state guids]
+  (let [guid-to-path (item-guid-to-path-map state)
+        paths (-> (select-keys guid-to-path guids) vals)]
+    (reduce
+      (fn [s path]
+        (assoc-in s (conj path :seen?) true))
+      state
+      paths)))

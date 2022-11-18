@@ -1,26 +1,17 @@
 (ns feedn.config
-  (:refer-clojure :exclude [subs])
-  (:require [clojure.edn :as edn]))
+  (:require [clojure.edn :as edn]
+            [feedn.util :refer [deep-merge]]))
 
-(defn- expand-subs
-  "Expand subs from condensed config format to full format"
-  [subs]
-  (->> (apply concat
-        (let [root-opts (dissoc subs :sources)]
-          (for [[source-name source-data] (:sources subs)]
-            (let [source-opts (merge root-opts (dissoc source-data :subs))]
-              (for [[channel sub-opts] (:subs source-data)]
-                (let [opts (merge source-opts sub-opts)]
-                  [[source-name channel] (merge opts {:source source-name
-                                                      :channel channel})]))))))
-       (into {})))
+(def default-config
+  {:subs
+   {:period 120
+    :max-items 10
+    :min-volume 2
+    :color "#ddd"}
+   :updates-remaining 24
+   :volume 2})
 
-(defn load-config
-  "Load config from filepath and return config map"
-  [filepath]
-  (-> filepath
-      slurp
-      edn/read-string
-      (update :subs expand-subs)))
+(defonce config_ (atom default-config))
 
-#_ (load-config "config.edn")
+(defn load-config [config filepath]
+  (deep-merge config (-> filepath slurp edn/read-string)))

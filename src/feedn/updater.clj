@@ -1,33 +1,56 @@
 (ns feedn.updater
-  (:require [feedn.source :refer [fetch-items]]
-            [feedn.state :refer [state*]]
-            [feedn.timeline :refer [prune-seen]]
+  (:require [feedn.config :refer [config_]]
+            [feedn.source :refer [fetch-items]]
+            [feedn.state :refer [state_]]
+            [feedn.sub :as sub]
             [feedn.util :refer [index-by]]
             [java-time :as jt]
-            [taoensso.timbre :refer [debug error]]))
+            [taoensso.timbre :as log]))
 
-(defn- tick-sub [{:keys [period timer] :as sub}]
-  "Advance timer for sub"
+(defn refresh-subs
+  "Add subs from config that are not in state; remove subs from state that are not in config"
+  [state config]
+  (assoc
+    state
+    :subs
+    (reduce
+      (fn [m [s c _]]
+        (let [sub-state (or (sub/get-sub-state state s c) {})]
+          (assoc-in m [:sources s :channels c] sub-state)))
+      {}
+      (sub/iter-subs config))))
+
+(defn update-state-from-config [state config]
+  (let [state (merge (select-keys config [:updates-remaining :volume]) state)
+        state (refresh-subs state config)]
+    state))
+
+(defn tick-sub-timer [{:keys [timer] :as sub-state} {:keys [period] :as sub-config}]
   (let [timer (case timer
                 nil (rand-int period)
                 0 period
                 (dec timer))]
-    (assoc sub :timer timer)))
+    (assoc sub-state :timer timer)))
 
-(defn- tick-subs [state]
-  "Advance timers for all subs"
-  (update state :subs #(update-vals % tick-sub)))
+(defn tick-sub-timers [state config]
+  (sub/update-subs
+    state
+    (fn [s c sub-state]
+      (let [sub-config (sub/get-sub-config config s c)]
+        (tick-sub-timer sub-state sub-config)))))
 
-(defn- new-items-are-stale? [sub items]
+(defn new-items-are-stale?
   "Return true if items are older than the items in the sub (happens w/ certain nitter instances sometimes)"
+  [sub items]
   (and (seq (:items sub))
        (seq items)
        (jt/after?
          (apply jt/max (map :pub-date (:items sub)))
          (apply jt/max (map :pub-date items)))))
 
-(defn- update-items [sub items]
+(defn update-items
   "Add items to sub by merging new into old. Old items that are not in the passed collection are removed."
+  [sub items]
   (if (new-items-are-stale? sub items)
     sub
     (let [existing-items (get sub :items [])
@@ -39,45 +62,52 @@
           items (mapv #(merge (get existing-items-by-guid (:guid %) {}) %) items)]
       (assoc sub :items items))))
 
-(defn- fetch-and-update! [[source channel]]
-  "Fetch latest items for [source channel] and add to state"
-  (let [items (try
-                (fetch-items source channel)
-                (catch Exception e
-                  (case (:type (ex-data e))
-                    :fetch (debug (str (ex-cause e)) [source channel])
-                    (error e [source channel]))
-                  (throw e)))]
-    (swap! state* update-in [:subs [source channel]] #(-> %
-                                                          (update-items items)
-                                                          (assoc :last-fetched (jt/instant))))))
+(defn fetch-and-update! [source channel]
+  (let [[items error]
+        (try
+          [(fetch-items source channel) nil]
+          (catch Exception e
+            (case (:type (ex-data e))
+              :fetch (log/debug (str (ex-cause e)) [source channel])
+              (log/error e [source channel]))
+            [nil e]))]
+    (swap!
+      state_
+      update-in
+      [:subs :sources source :channels channel]
+      (fn [sub]
+        (let [now (jt/instant)
+              sub (assoc sub :last-fetch-attempt now)]
+          (if (some? items)
+            (-> sub
+                (assoc :last-successful-fetch now)
+                (update-items items))
+            (assoc sub :last-fetch-error error)))))))
+
+(defn tick-updater! []
+  (let [config @config_]
+    (swap! state_ update-state-from-config config)
+    (swap! state_ tick-sub-timers config)
+    (let [state @state_
+          subs-to-fetch (->> (sub/iter-subs state)
+                             (filter (fn [[_ _ sub-state]]
+                                       (= (:timer sub-state) 0))))]
+      (dorun
+        (map (fn [[source channel _]]
+               (future
+                 (fetch-and-update! source channel)))
+             subs-to-fetch)))))
 
 (defn run-updater! []
-  "Run updater, which will fetch items from all subs according to period"
   (loop []
-    (let [state (swap! state* tick-subs)
-          to-fetch (->> (:subs state)
-                        (filter (fn [[k v]] (= 0 (:timer v))))
-                        (keys))]
-      (dorun (map #(future (fetch-and-update! %)) to-fetch))
-      (Thread/sleep 1000)
-      (swap! state* prune-seen)
-      (recur))))
+    (tick-updater!)
+    (Thread/sleep 1000)
+    (recur)))
 
-#_ (tick-subs @state*)
+(comment
 
-#_ (-> @state*
-       :subs
-       (get [:nitter "ckparrot"])
-       (update-items [{:title "hai" :guid "123" :seen? true}])
-       (update-items [{:title "bai" :guid "123"}])
-       (update-items [{:title "bai" :guid "123"} {:title "yeah" :guid "456"}])
-       (update-items [{:title "yeah" :guid "456"}]))
+  (defn trigger-and-tick! []
+    (swap! state_ sub/update-subs (fn [_ _ m] (assoc m :timer 1)))
+    (tick-updater!))
 
-#_ (def updater (future (run-updater!)))
-
-#_ (future-cancel updater)
-
-#_ (-> @state*
-       :subs
-       (get [:nitter "ckparrot"]))
+  (def updater (future (run-updater!))))

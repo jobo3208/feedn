@@ -2,38 +2,18 @@
   (:require [clojure.java.io :as io]
             [compojure.core :refer [routes GET POST]]
             [compojure.handler :refer [site]]
+            [feedn.config :refer [config_]]
+            [feedn.frontend.filter :refer [params->filter-params filter-params->fn]]
             [feedn.limit :as limit]
             [feedn.source :refer [render-item]]
-            [feedn.state :refer [state*]]
-            [feedn.timeline :refer [get-timeline mark-seen!]]
+            [feedn.state :refer [state_]]
+            [feedn.timeline :refer [get-timeline mark-seen]]
             [hiccup.core :refer [html]]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.resource :refer [wrap-resource]]
             [ring.util.response :as resp]))
 
-(def FILTER-PARAMS [:source :channel :tag])
-
-(defmulti coerce-filter-param (fn [k v] k))
-(defmethod coerce-filter-param :source [_ v] (keyword v))
-(defmethod coerce-filter-param :tag [_ v] (keyword v))
-(defmethod coerce-filter-param :default [_ v] v)
-
-(defn coerce-filter-params [filter-params]
-  (->> filter-params
-       (map (fn [[k v]]
-              [k (coerce-filter-param k v)]))
-       (into {})))
-
-(defmulti param->filter-fn (fn [k v] k))
-(defmethod param->filter-fn :tag [_ v] (fn [item] ((:tags item) v)))
-(defmethod param->filter-fn :default [k v] (comp (partial = v) k))
-
-(defn params->filter-fn [params]
-  (apply every-pred (map #(apply param->filter-fn %) params)))
-
-(def clear-filters-emoji "\uD83D\uDEAB")
-
-(defn base-tpl [body]
+(defn base-template [body]
   (html
     [:html
      [:head
@@ -46,28 +26,29 @@
       [:title "feedn"]]
      [:body body]]))
 
+(def clear-filters-emoji "\uD83D\uDEAB")
+
 (defn index-view [req]
-  (let [state @state*
-        params (:params req)
-        filter-params (select-keys params FILTER-PARAMS)
-        filter-params (coerce-filter-params filter-params)
+  (let [state @state_
+        config @config_
+        filter-params (params->filter-params (:params req))
         filter-fn (if (seq filter-params)
-                    (params->filter-fn filter-params)
+                    (filter-params->fn filter-params)
                     (constantly true))
-        timeline (->> (get-timeline)
+        timeline (->> (get-timeline state config)
                       (filter filter-fn)
                       (filter #(>= (:volume state) (:min-volume %))))
-        [after-cutoff before-cutoff] (split-with (partial limit/after-cutoff? state) timeline)
-        [unseen seen] (split-with (comp not :seen?) before-cutoff)]
-    (mark-seen! unseen)
-    (base-tpl
+        timeline (drop-while (partial limit/after-cutoff? state) timeline)
+        [unseen seen] (split-with (comp not :seen?) timeline)]
+    (swap! state_ mark-seen (map :guid unseen))
+    (base-template
       (html
         [:div.container
          [:div.page-header
           [:div
            [:form.post-link {:action "/update" :method :post}
             [:button {:type :submit} "update"]
-            (str " (" (:limit/updates-remaining state) ")")]]
+            (str " (" (:updates-remaining state) ")")]]
           [:div {:style "text-align: center;"}
            (if (seq unseen)
              [:a {:href (str "#" (-> unseen last :guid))}
@@ -85,7 +66,7 @@
          (map #(render-item :html %) seen)]))))
 
 (defn settings-view []
-  (base-tpl
+  (base-template
     (html
       [:div.container
        [:div.page-header "settings"]
@@ -93,7 +74,7 @@
         [:dl
          [:dt "volume"]
          [:dd
-          [:input {:type :range :min 1 :max 3 :step 1 :name "volume" :value (:volume @state*)}]]]
+          [:input {:type :range :min 0 :max 3 :step 1 :name "volume" :value (:volume @state_)}]]]
         [:button {:type :submit} "save"]]])))
 
 (def handler
@@ -102,14 +83,14 @@
       (GET "/" [_ :as req]
         (index-view req))
       (POST "/update" []
-        (swap! state* limit/register-update)
+        (swap! state_ limit/register-update @config_)
         (resp/redirect "/"))
       (GET "/settings" []
         (settings-view))
       (POST "/settings" [_ :as req]
         (let [volume (-> req :params :volume (Integer.))]
-          (assert (#{1 2 3} volume))
-          (swap! state* assoc :volume volume)
+          (assert (#{0 1 2 3} volume))
+          (swap! state_ assoc :volume volume)
           (resp/redirect "/"))))))
 
 (defn handler-wrapper [request]
@@ -119,5 +100,3 @@
 
 (defn run-server! []
   (run-jetty handler-wrapper {:host "0.0.0.0" :port 3000 :join? false}))
-
-#_ (run-server!)

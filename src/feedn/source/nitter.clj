@@ -1,6 +1,6 @@
 (ns feedn.source.nitter
   (:require [clojure.string :as string]
-            [feedn.source :refer [fetch-items render-item-body]]
+            [feedn.source.api :refer [fetch-items render-item-body]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -30,7 +30,7 @@
     (string/replace v from to)
     v))
 
-(defn- parse [source channel opts doc]
+(defn- parse [source channel doc]
   (let [byline (select-text doc [:channel :> :title])
         [_ name handle] (re-matches #"(.+) / (@.+)$" byline)
         link (select-text doc [:channel :> :link])
@@ -42,19 +42,17 @@
     items))
 
 (defmethod fetch-items :nitter
-  ([source channel]
-   (fetch-items source channel {}))
-  ([source channel opts]
-   (let [url (java.net.URL. (str "https://" NITTER-FETCH-DOMAIN "/" channel "/rss"))
-         doc (try
-               (xml/xml-resource url)
-               (catch Exception e
-                 (throw (ex-info "fetch error" {:type :fetch :url url} e))))
-         items (try
-                 (parse source channel opts doc)
-                 (catch Exception e
-                   (throw (ex-info "parse error" {:type :parse} e))))]
-     items)))
+  [source channel]
+  (let [url (java.net.URL. (str "https://" NITTER-FETCH-DOMAIN "/" channel "/rss"))
+        doc (try
+              (xml/xml-resource url)
+              (catch Exception e
+                (throw (ex-info "fetch error" {:type :fetch :url url} e))))
+        items (try
+                (parse source channel doc)
+                (catch Exception e
+                  (throw (ex-info "parse error" {:type :parse} e))))]
+    items))
 
 (defmethod render-item-body [:html :nitter]
   [_ item]

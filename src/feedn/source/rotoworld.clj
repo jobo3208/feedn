@@ -1,6 +1,6 @@
 (ns feedn.source.rotoworld
   (:require [cheshire.core :as json]
-            [feedn.source :refer [fetch-items render-item-body]]
+            [feedn.source.api :refer [fetch-items render-item-body]]
             [feedn.util :refer [ago-str]]
             [hiccup.core :refer [html]]
             [java-time :as jt]))
@@ -20,7 +20,7 @@
    :rotoworld/transaction (get-in item ["attributes" "transaction"])
    :rotoworld/rumor (get-in item ["attributes" "rumor"])})
 
-(defn- parse [source channel opts doc]
+(defn- parse [source channel doc]
   (let [source-items (-> doc
                          (json/parse-string)
                          (get "data"))]
@@ -29,19 +29,17 @@
           (map #(assoc % :source source :channel channel)))))
 
 (defmethod fetch-items :rotoworld
-  ([source channel]
-   (fetch-items source channel {}))
-  ([source channel opts]
-   (let [url channel
-         doc (try
-               (slurp url)
-               (catch Exception e
-                 (throw (ex-info "fetch error" {:type :fetch :url url} e))))
-         items (try
-                 (parse source channel opts doc)
-                 (catch Exception e
-                   (throw (ex-info "parse error" {:type :parse} e))))]
-     items)))
+  [source channel]
+  (let [url channel
+        doc (try
+              (slurp url)
+              (catch Exception e
+                (throw (ex-info "fetch error" {:type :fetch :url url} e))))
+        items (try
+                (parse source channel doc)
+                (catch Exception e
+                  (throw (ex-info "parse error" {:type :parse} e))))]
+    items))
 
 (defmethod render-item-body [:html :rotoworld]
   [_ item]
