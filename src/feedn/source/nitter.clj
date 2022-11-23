@@ -1,6 +1,6 @@
 (ns feedn.source.nitter
   (:require [clojure.string :as string]
-            [feedn.source.api :refer [fetch-items render-item-body]]
+            [feedn.source.interface :refer [fetch-items render-item-body]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -14,10 +14,9 @@
    :content (select-text item [:description])
    :author handle
    :link (select-text item [:link])
-   :guid (->> (select-text item [:guid])
-              (re-find #"status/(\d+)")
-              second
-              (str "nitter:"))
+   :id (->> (select-text item [:guid])
+            (re-find #"status/(\d+)")
+            second)
    :pub-date (jt/instant (jt/formatter :rfc-1123-date-time)
                          (select-text item [:pubDate]))
    :nitter/account-name name
@@ -38,11 +37,11 @@
         items (->> (xml/select doc [:item])
                    (map #(parse-item name handle %))
                    (map #(update-vals % (partial replace-domain domain NITTER-LINK-MEDIA-DOMAIN)))
-                   (map #(assoc % :source source :channel channel :nitter/domain domain)))]
+                   (map #(assoc % :nitter/domain domain)))]
     items))
 
 (defmethod fetch-items :nitter
-  [source channel]
+  [source channel _]
   (let [url (java.net.URL. (str "https://" NITTER-FETCH-DOMAIN "/" channel "/rss"))
         doc (try
               (xml/xml-resource url)

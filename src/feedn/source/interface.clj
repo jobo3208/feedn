@@ -1,8 +1,8 @@
-(ns feedn.source.api)
+(ns feedn.source.interface)
 
 (defmulti fetch-items
   "Fetch items from source and return a sequence of items"
-  (fn [source channel]
+  (fn [source channel sub-config]
     source))
 
 (defmulti render-item-body

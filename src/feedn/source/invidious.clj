@@ -1,5 +1,5 @@
 (ns feedn.source.invidious
-  (:require [feedn.source.api :refer [fetch-items render-item-body]]
+  (:require [feedn.source.interface :refer [fetch-items render-item-body]]
             [feedn.util :refer [ago-str select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -9,19 +9,19 @@
   {:title (select-text item [:title])
    :author (select-text item [:author :name])
    :link (-> (xml/select item [:link]) first :attrs :href)
-   :guid (select-text item [:id])
+   :id (select-text item [:id])
    :pub-date (jt/instant (jt/formatter :iso-offset-date-time)
                          (select-text item [:published]))})
 
 (defn- parse [source channel doc]
   (let [entries (xml/select doc [:entry])
-        items (map parse-item entries)
-        items (map #(assoc % :source source :channel channel) items)]
+        items (map parse-item entries)]
      items))
 
 (defmethod fetch-items :invidious
-  [source channel]
-  (let [url (java.net.URL. (str "https://yewtu.be/feed/channel/" channel))
+  [source channel sub-config]
+  (let [channel-id (:invidious/channel-id sub-config)
+        url (java.net.URL. (str "https://yewtu.be/feed/channel/" channel-id))
         doc (try
               (xml/xml-resource url)
               (catch Exception e

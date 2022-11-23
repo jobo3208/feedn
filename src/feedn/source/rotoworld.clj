@@ -1,6 +1,6 @@
 (ns feedn.source.rotoworld
   (:require [cheshire.core :as json]
-            [feedn.source.api :refer [fetch-items render-item-body]]
+            [feedn.source.interface :refer [fetch-items render-item-body]]
             [feedn.util :refer [ago-str]]
             [hiccup.core :refer [html]]
             [java-time :as jt]))
@@ -9,7 +9,7 @@
   {:title (get-in item ["attributes" "headline"])
    :content (get-in item ["attributes" "news" "processed"])
    :author (get-in item ["attributes" "source"])
-   :guid (item "id")
+   :id (item "id")
    :pub-date (jt/instant (jt/formatter :iso-offset-date-time)
                          (get-in item ["attributes" "created"]))
    :rotoworld/news (get-in item ["attributes" "news" "processed"])
@@ -25,12 +25,11 @@
                          (json/parse-string)
                          (get "data"))]
      (->> source-items
-          (map parse-item)
-          (map #(assoc % :source source :channel channel)))))
+          (map parse-item))))
 
 (defmethod fetch-items :rotoworld
-  [source channel]
-  (let [url channel
+  [source channel sub-config]
+  (let [url (:url sub-config)
         doc (try
               (slurp url)
               (catch Exception e

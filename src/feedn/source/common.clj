@@ -1,6 +1,6 @@
 (ns feedn.source.common
   (:require [feedn.config :refer [config_]]
-            [feedn.source.api :refer [render-item render-item-body]]
+            [feedn.source.interface :refer [render-item render-item-body]]
             [feedn.util :refer [short-ago-str]]
             [hiccup.core :refer [html]]))
 

@@ -62,10 +62,10 @@
           items (mapv #(merge (get existing-items-by-guid (:guid %) {}) %) items)]
       (assoc sub :items items))))
 
-(defn fetch-and-update! [source channel]
+(defn fetch-and-update! [source channel sub-config]
   (let [[items error]
         (try
-          [(fetch-items source channel) nil]
+          [(fetch-items source channel sub-config) nil]
           (catch Exception e
             (case (:type (ex-data e))
               :fetch (log/debug (str (ex-cause e)) [source channel])
@@ -94,8 +94,9 @@
                                        (= (:timer sub-state) 0))))]
       (dorun
         (map (fn [[source channel _]]
-               (future
-                 (fetch-and-update! source channel)))
+               (let [sub-config (sub/get-sub-config config source channel)]
+                 (future
+                   (fetch-and-update! source channel sub-config))))
              subs-to-fetch)))))
 
 (defn run-updater! []

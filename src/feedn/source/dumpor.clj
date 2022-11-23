@@ -1,6 +1,6 @@
 (ns feedn.source.dumpor
   (:require [clojure.string :as string]
-            [feedn.source.api :refer [fetch-items render-item-body]]
+            [feedn.source.interface :refer [fetch-items render-item-body]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -30,7 +30,7 @@
   (let [content (xml/select item [:.content__img-wrap])
         rel-link (-> content (xml/select [xml/root :> :a]) first :attrs :href)
         link (str "https://dumpor.com" rel-link)
-        guid (str "dumpor:" (last (string/split rel-link #"/")))]
+        id (last (string/split rel-link #"/"))]
     {:content (-> content
                   (xml/at
                     [:.content__btns] nil
@@ -40,7 +40,7 @@
                   (xml/emit*)
                   (as-> s (apply str s)))
      :pub-date (parse-ago-str (select-text item [(xml/has [:> :.bx-time]) :span]))
-     :guid guid
+     :id id
      :link link}))
 
 (defn- parse [source channel doc]
@@ -48,15 +48,12 @@
         account-handle (select-text doc [:.user :h4])
         items (->> (xml/select doc [[:.card (xml/but :.ads)]])
                    (map #(parse-item %))
-                   (map #(assoc %
-                                :source source
-                                :channel channel
-                                :dumpor/account-name account-name
-                                :dumpor/account-handle account-handle)))]
+                   (map #(assoc % :dumpor/account-name account-name
+                                  :dumpor/account-handle account-handle)))]
      items))
 
 (defmethod fetch-items :dumpor
-  [source channel]
+  [source channel _]
   (let [url (java.net.URL. (str "https://dumpor.com/v/" channel))
         doc (try
               (xml/html-resource url)
