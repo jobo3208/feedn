@@ -7,8 +7,11 @@
             [feedn.limit :as limit]
             [feedn.source :refer [render-item]]
             [feedn.state :refer [state_]]
+            [feedn.sub :refer [iter-subs]]
             [feedn.timeline :refer [get-timeline mark-seen]]
+            [feedn.util :refer [short-ago-str]]
             [hiccup.core :refer [html]]
+            [java-time :as jt]
             [ring.adapter.jetty :refer [run-jetty]]
             [ring.middleware.resource :refer [wrap-resource]]
             [ring.util.response :as resp]))
@@ -77,6 +80,32 @@
           [:input {:type :range :min 0 :max 3 :step 1 :name "volume" :value (:volume @state_)}]]]
         [:button {:type :submit} "save"]]])))
 
+(defn subs-view []
+  (let [state @state_]
+    (base-template
+      (html
+        [:table {:style "text-align: center; width: 100%;"}
+         [:tr
+          [:th "source"]
+          [:th "channel"]
+          [:th "next fetch"]
+          [:th "last fetch"]]
+         (for [[s c sub-state] (sort (iter-subs state))]
+           [:tr
+            [:td s]
+            [:td c]
+            [:td (str (:timer sub-state) "s")]
+            (let [{:keys [last-fetch-attempt last-fetch-error last-successful-fetch]} sub-state
+                  error (and last-fetch-attempt
+                             (or (nil? last-successful-fetch)
+                                 (jt/after? last-fetch-attempt last-successful-fetch)))]
+              [:td {:style (str "color: " (if error "red" "black"))}
+               (if last-successful-fetch
+                 (short-ago-str last-successful-fetch)
+                 "-")
+               (when error
+                 (format " (%s - %s)" (ex-message last-fetch-error) (short-ago-str last-fetch-attempt)))])])]))))
+
 (def handler
   (site
     (routes
@@ -91,7 +120,9 @@
         (let [volume (-> req :params :volume (Integer.))]
           (assert (#{0 1 2 3} volume))
           (swap! state_ assoc :volume volume)
-          (resp/redirect "/"))))))
+          (resp/redirect "/")))
+      (GET "/subs" []
+        (subs-view)))))
 
 (defn handler-wrapper [request]
   (let [handler (-> handler
