@@ -4,7 +4,8 @@
             feedn.source.dumpor
             feedn.source.invidious
             feedn.source.nitter
-            feedn.source.rotoworld))
+            feedn.source.rotoworld
+            feedn.source.substack))
 
 (defn fetch-items [source channel sub-config]
   (->> (interface/fetch-items source channel sub-config)
