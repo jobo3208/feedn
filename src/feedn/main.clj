@@ -7,9 +7,12 @@
 (System/setProperty "sun.net.client.defaultConnectTimeout" "5000")
 (System/setProperty "sun.net.client.defaultReadTimeout" "5000")
 
-(defn -main [& args]
-  (log/merge-config! {:appenders {:spit (log/spit-appender {:fname "log"})}
-                      :min-level :info})
-  (swap! config_ load-config "config.edn")
-  (future (run-updater!))
-  (run-server!))
+(defn -main
+  ([]
+   (-main "config.edn"))
+  ([config-filepath]
+   (log/merge-config! {:appenders {:spit (log/spit-appender {:fname "log"})}
+                       :min-level :info})
+   (swap! config_ load-config config-filepath)
+   (future (run-updater!))
+   (run-server!)))
