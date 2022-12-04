@@ -1,6 +1,7 @@
 (ns feedn.source.rotoworld
   (:require [cheshire.core :as json]
-            [feedn.source.interface :refer [fetch-items render-item-body]]
+            [feedn.source.common :refer [prepare-for-html-render]]
+            [feedn.source.interface :refer [fetch-items]]
             [feedn.util :refer [ago-str]]
             [hiccup.core :refer [html]]
             [java-time :as jt]))
@@ -41,10 +42,9 @@
                   (throw (ex-info "parse error" {:type :parse} e))))]
     items))
 
-(defmethod render-item-body [:html :rotoworld]
-  [_ item]
-  (html
-    [:div.item-body
-     [:h3 {:id (:guid item)} (:title item)]
-     (:rotoworld/news item)
-     (:rotoworld/analysis item)]))
+(defmethod prepare-for-html-render :rotoworld
+  [item]
+  (assoc item
+         :render.html/content
+         (str (:rotoworld/news item)
+              (:rotoworld/analysis item))))

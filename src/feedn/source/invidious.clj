@@ -1,5 +1,6 @@
 (ns feedn.source.invidious
-  (:require [feedn.source.interface :refer [fetch-items render-item-body]]
+  (:require [feedn.source.common :refer [prepare-for-html-render]]
+            [feedn.source.interface :refer [fetch-items]]
             [feedn.util :refer [ago-str select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -32,9 +33,10 @@
                   (throw (ex-info "parse error" {:type :parse} e))))]
     items))
 
-(defmethod render-item-body [:html :invidious]
-  [_ item]
-  (html
-    [:div.item-body
-     [:h3 {:id (:guid item)} (:author item)]
-     [:p [:a {:href (:link item)} (:title item)]]]))
+(defmethod prepare-for-html-render :invidious
+  [item]
+  (assoc item
+         :render.html/heading
+         (:author item)
+         :render.html/content
+         [:p [:a {:href (:link item)} (:title item)]]))

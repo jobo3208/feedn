@@ -1,6 +1,7 @@
 (ns feedn.source.dumpor
   (:require [clojure.string :as string]
-            [feedn.source.interface :refer [fetch-items render-item-body]]
+            [feedn.source.common :refer [prepare-for-html-render]]
+            [feedn.source.interface :refer [fetch-items]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -65,9 +66,8 @@
                   (throw (ex-info "parse error" {:type :parse} e))))]
     items))
 
-(defmethod render-item-body [:html :dumpor]
-  [_ item]
-  (html
-    [:div.item-body
-     [:h3 {:class "card-title" :id (:guid item)} (:dumpor/account-name item) " (" (:dumpor/account-handle item) ")"]
-     (:content item)]))
+(defmethod prepare-for-html-render :dumpor
+  [item]
+  (assoc item
+         :render.html/heading
+         (str (:dumpor/account-name item) " (" (:dumpor/account-handle item) ")")))

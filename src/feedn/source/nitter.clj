@@ -1,6 +1,8 @@
 (ns feedn.source.nitter
   (:require [clojure.string :as string]
-            [feedn.source.interface :refer [fetch-items render-item-body]]
+            [feedn.source.common :refer [prepare-for-html-render]]
+            [feedn.source.interface :refer [fetch-items]]
+            [feedn.state :refer [state_]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -29,6 +31,11 @@
     (string/replace v from to)
     v))
 
+(defn- replace-domain-in-item [from to item]
+  (merge item (-> item
+                  (select-keys [:title :content :link])
+                  (update-vals (partial replace-domain from to)))))
+
 (defn- parse [source channel doc]
   (let [byline (select-text doc [:channel :> :title])
         [_ name handle] (re-matches #"(.+) / (@.+)$" byline)
@@ -36,7 +43,7 @@
         [_ _ domain _] (string/split link #"/")
         items (->> (xml/select doc [:item])
                    (map #(parse-item name handle %))
-                   (map #(update-vals % (partial replace-domain domain NITTER-LINK-MEDIA-DOMAIN)))
+                   (map (partial replace-domain-in-item domain NITTER-LINK-MEDIA-DOMAIN))
                    (map #(assoc % :nitter/domain domain)))]
     items))
 
@@ -53,11 +60,14 @@
                   (throw (ex-info "parse error" {:type :parse} e))))]
     items))
 
-(defmethod render-item-body [:html :nitter]
-  [_ item]
-  (html
-    [:div.item-body
-     [:h3 {:class "card-title" :id (:guid item)} (:nitter/account-name item) " (" (:nitter/account-handle item) ")"]
-     (when (:nitter/retweet? item)
-       [:h4 {:style "card-subtitle"} "RT " (:nitter/creator item)])
-     (:content item)]))
+(defmethod prepare-for-html-render :nitter
+  [item]
+  (let [item (if-let [render-domain (:nitter/render-domain @state_)]
+               (replace-domain-in-item NITTER-LINK-MEDIA-DOMAIN render-domain item)
+               item)]
+    (assoc item
+           :render.html/heading
+           (str (:nitter/account-name item) " (" (:nitter/account-handle item) ")")
+           :render.html/subheading
+           (when (:nitter/retweet? item)
+             (str "RT " (:nitter/creator item))))))
