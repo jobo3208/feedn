@@ -74,10 +74,17 @@
       [:div.container
        [:div.page-header "settings"]
        [:form {:method :post}
+        [:datalist {:id :nitter-render-domain-list}
+         [:option "nitter.net"]
+         [:option "nitter.42l.fr"]
+         [:option "nitter.pussthecat.org"]]
         [:dl
          [:dt "volume"]
          [:dd
-          [:input {:type :range :min 0 :max 3 :step 1 :name "volume" :value (:volume @state_)}]]]
+          [:input {:type :range :min 0 :max 3 :step 1 :name "volume" :value (:volume @state_)}]]
+         [:dt "nitter/render-domain"]
+         [:dd
+          [:input {:type :text :name "nitter/render-domain" :list :nitter-render-domain-list :value (:nitter/render-domain @state_)}]]]
         [:button {:type :submit} "save"]]])))
 
 (defn subs-view []
@@ -117,10 +124,14 @@
       (GET "/settings" []
         (settings-view))
       (POST "/settings" [_ :as req]
-        (let [volume (-> req :params :volume (Integer.))]
-          (assert (#{0 1 2 3} volume))
-          (swap! state_ assoc :volume volume)
-          (resp/redirect "/")))
+        #_ (html [:pre (with-out-str (clojure.pprint/pprint req))])
+        (do
+         (let [volume (-> req :params :volume (Integer.))]
+           (assert (#{0 1 2 3} volume))
+           (swap! state_ assoc :volume volume))
+         (let [render-domain (-> req :params (get "nitter/render-domain"))]
+           (swap! state_ assoc :nitter/render-domain render-domain))
+         (resp/redirect "/")))
       (GET "/subs" []
         (subs-view)))))
 
