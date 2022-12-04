@@ -1,6 +1,7 @@
 (ns feedn.source.substack
   (:require [clojure.string :as string]
-            [feedn.source.interface :refer [fetch-items render-item-body]]
+            [feedn.source.common :refer [prepare-for-html-render]]
+            [feedn.source.interface :refer [fetch-items]]
             [feedn.util :refer [select-text]]
             [hiccup.core :refer [html]]
             [java-time :as jt]
@@ -36,10 +37,10 @@
                   (throw (ex-info "parse error" {:type :parse} e))))]
     items))
 
-(defmethod render-item-body [:html :substack]
-  [_ item]
-  (html
-    [:div.item-body
-     [:h3 {:class "card-title" :id (:guid item)} (:substack/newsletter-name item)]
-     [:a {:href (:link item)} (:title item)]
-     [:p (:content item)]]))
+(defmethod prepare-for-html-render :substack
+  [item]
+  (assoc item
+         :render.html/heading
+         (:substack/newsletter-name item)
+         :render.html/content
+         [:p (:content item)]))

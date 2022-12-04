@@ -1,6 +1,6 @@
 (ns feedn.source.common
   (:require [feedn.config :refer [config_]]
-            [feedn.source.interface :refer [render-item render-item-body]]
+            [feedn.source.interface :refer [render-item]]
             [feedn.util :refer [short-ago-str]]
             [hiccup.core :refer [html]]))
 
@@ -26,12 +26,24 @@
      " "
      (interpose " " (map tag-link (:tags item)))]))
 
+(defmulti prepare-for-html-render :source)
+
+(defmethod prepare-for-html-render :default [item] item)
+
 (defmethod render-item :html
   [_ item]
-  (html
-    [:div {:style (str "background-color: " (:color item))
-           :class (if (not (:seen? item))
-                    "item unseen"
-                    "item")}
-     (render-item-body :html item)
-     (render-item-footer-html item)]))
+  (let [item (prepare-for-html-render item)
+        heading (or (:render.html/heading item) (:title item))
+        subheading (:render.html/subheading item)
+        content (or (:render.html/content item) (:content item))]
+    (html
+      [:div {:style (str "background-color: " (:color item))
+             :class (if (not (:seen? item))
+                      "item unseen"
+                      "item")}
+       [:div.item-body
+        [:h3 {:class "card-title" :id (:guid item)} heading]
+        (when subheading
+          [:h4 {:style "card-subtitle"} subheading])
+        content]
+       (render-item-footer-html item)])))
