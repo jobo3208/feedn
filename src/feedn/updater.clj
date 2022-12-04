@@ -21,7 +21,9 @@
       (sub/iter-subs config))))
 
 (defn update-state-from-config [state config]
-  (let [state (merge (select-keys config [:updates-remaining :volume]) state)
+  ; TODO: handle source-specific config more flexibly
+  ; TODO: more clearly establish distinction between config and state
+  (let [state (merge (select-keys config [:nitter/render-domain :updates-remaining :volume]) state)
         state (refresh-subs state config)]
     state))
 
