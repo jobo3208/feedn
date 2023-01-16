@@ -9,6 +9,7 @@
   {:title (get-in item ["attributes" "headline"])
    :content (get-in item ["attributes" "news" "processed"])
    :author (get-in item ["attributes" "source"])
+   :link (str "https://www.nbcsportsedge.com/football/nfl/player-news/" (get-in item ["attributes" "drupal_internal__id"]))
    :id (item "id")
    :pub-date (jt/instant (jt/formatter :iso-offset-date-time)
                          (get-in item ["attributes" "created"]))
