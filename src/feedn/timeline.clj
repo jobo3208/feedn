@@ -26,7 +26,7 @@
        (map last)
        (mapcat :items)
        (map (partial merge-ctx config))
-       (sort-by (juxt (comp not :seen?) :pub-date))
+       (sort-by (juxt (comp not :seen?) :pub-date :nitter/retweet?))
        (reverse)))
 
 (defn item-guid-to-path-map [state]
