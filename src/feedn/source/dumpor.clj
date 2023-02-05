@@ -30,7 +30,7 @@
 (defn- parse-item [item]
   (let [content (xml/select item [:.content__img-wrap])
         rel-link (-> content (xml/select [xml/root :> :a]) first :attrs :href)
-        link (str "https://dumpor.com" rel-link)
+        link (str "https://dumpoir.com" rel-link)
         id (last (string/split rel-link #"/"))]
     {:content (-> content
                   (xml/at
@@ -55,7 +55,7 @@
 
 (defmethod fetch-items :dumpor
   [source channel _]
-  (let [url (java.net.URL. (str "https://dumpor.com/v/" channel))
+  (let [url (java.net.URL. (str "https://dumpoir.com/v/" channel))
         doc (try
               (xml/html-resource url)
               (catch Exception e
