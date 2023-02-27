@@ -1,5 +1,5 @@
 (ns feedn.main
-  (:require [feedn.config :refer [config_ load-config]]
+  (:require [feedn.config :refer [load-config!]]
             [feedn.frontend :refer [run-server!]]
             [feedn.updater :refer [run-updater!]]
             [taoensso.timbre :as log]))
@@ -13,6 +13,6 @@
   ([config-filepath]
    (log/merge-config! {:appenders {:spit (log/spit-appender {:fname "log"})}
                        :min-level :info})
-   (swap! config_ load-config config-filepath)
+   (load-config! config-filepath)
    (future (run-updater!))
    (run-server!)))
