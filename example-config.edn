@@ -1,0 +1,19 @@
+{:subs
+ {:sources
+  {:nitter
+   {:channels
+    {"adamschefter" {:tags #{:football}}}}
+   :rotoworld
+   {:color "#ffcce1"
+    :channels
+    {"Headlines"
+     {:url "https://www.nbcsportsedge.com/api/player_news?page%5Blimit%5D=10&sort=-initial_published_date&include=team,league,league.sport&filter%5Bsport_headline%5D=1&filter%5Bleague.meta.drupal_internal__id%5D=21"
+      :tags #{:football}}}}
+   :invidious
+   {:color "#faffc7"
+    :channels
+    {"The QB School"
+     {:invidious/channel-id "UCGfxHp2yuimtLsFaq1r7aIQ"
+      :tags #{:football}}}}}}
+ :tags
+ {:football {:emoji "\uD83C\uDFC8"}}}
