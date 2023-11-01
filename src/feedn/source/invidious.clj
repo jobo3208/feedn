@@ -22,7 +22,7 @@
 (defmethod fetch-items :invidious
   [source channel sub-config]
   (let [channel-id (:invidious/channel-id sub-config)
-        url (java.net.URL. (str "https://yewtu.be/feed/channel/" channel-id))
+        url (java.net.URL. (str "https://vid.puffyan.us/feed/channel/" channel-id))
         doc (try
               (xml/xml-resource url)
               (catch Exception e
