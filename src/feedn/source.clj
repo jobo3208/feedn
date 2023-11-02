@@ -2,6 +2,7 @@
   (:require [feedn.source.interface :as interface]
             feedn.source.common
             feedn.source.dumpor
+            feedn.source.fantasypros
             feedn.source.invidious
             feedn.source.nitter
             feedn.source.rotoworld
