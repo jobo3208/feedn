@@ -16,7 +16,7 @@
    :source :fantasypros})
 
 (defn- parse [source channel doc]
-  (let [news-line (->> (string/split-lines *page)
+  (let [news-line (->> (string/split-lines doc)
                        (map string/trim)
                        (filter #(string/starts-with? % "var news ="))
                        (first))
