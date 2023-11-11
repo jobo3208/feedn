@@ -43,7 +43,7 @@ Note that some sources have their own source-specific config params (e.g. `:invi
 
 To run:
 
-    $ clj -M -m feedn.main config.edn
+    $ clj -M -m feedn.main -c config.edn
 
 The web server will be running on `localhost:3000`.
 
