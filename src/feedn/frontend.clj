@@ -62,7 +62,9 @@
            (when (seq filter-params)
             [:span " " [:a {:href "/" :class :emoji-link :title "clear filters"} clear-filters-emoji]])]
           [:div {:style "text-align: right;"}
-           [:a {:href "/settings"} "settings"]]]
+           [:a {:href "/settings"} "set"]
+           [:span "|"]
+           [:a {:href "/subs"} "sub"]]]
          (map #(render-item :html %) unseen)
          (when (seq unseen)
            [:div.separator])
@@ -91,27 +93,29 @@
   (let [state @state_]
     (base-template
       (html
-        [:table {:style "text-align: center; width: 100%;"}
-         [:tr
-          [:th "source"]
-          [:th "channel"]
-          [:th "next fetch"]
-          [:th "last fetch"]]
-         (for [[s c sub-state] (sort (iter-subs state))]
-           [:tr
-            [:td s]
-            [:td c]
-            [:td (str (:timer sub-state) "s")]
-            (let [{:keys [last-fetch-attempt last-fetch-error last-successful-fetch]} sub-state
-                  error (and last-fetch-attempt
-                             (or (nil? last-successful-fetch)
-                                 (jt/after? last-fetch-attempt last-successful-fetch)))]
-              [:td {:style (str "color: " (if error "red" "black"))}
-               (if last-successful-fetch
-                 (short-ago-str last-successful-fetch)
-                 "-")
-               (when error
-                 (format " (%s - %s)" (ex-message last-fetch-error) (short-ago-str last-fetch-attempt)))])])]))))
+        [:div.container
+         [:div.page-header "subs"]
+         [:table {:style "text-align: center; width: 100%;"}
+          [:tr
+           [:th "source"]
+           [:th "channel"]
+           [:th "next fetch"]
+           [:th "last fetch"]]
+          (for [[s c sub-state] (sort (iter-subs state))]
+            [:tr
+             [:td s]
+             [:td c]
+             [:td (str (:timer sub-state) "s")]
+             (let [{:keys [last-fetch-attempt last-fetch-error last-successful-fetch]} sub-state
+                   error (and last-fetch-attempt
+                              (or (nil? last-successful-fetch)
+                                  (jt/after? last-fetch-attempt last-successful-fetch)))]
+               [:td {:style (str "color: " (if error "red" "black"))}
+                (if last-successful-fetch
+                  (short-ago-str last-successful-fetch)
+                  "-")
+                (when error
+                  (format " (%s - %s)" (ex-message last-fetch-error) (short-ago-str last-fetch-attempt)))])])]]))))
 
 (def handler
   (site
