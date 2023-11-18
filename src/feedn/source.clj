@@ -4,8 +4,8 @@
             feedn.source.dumpor
             feedn.source.fantasypros
             feedn.source.invidious
+            feedn.source.nbcsports
             feedn.source.nitter
-            feedn.source.rotoworld
             feedn.source.substack))
 
 (defn fetch-items [source channel sub-config]

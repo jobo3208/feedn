@@ -10,7 +10,7 @@ feedn is a minimalist news aggregator written in Clojure. At a glance:
       - Volume control: assign a volume level to each source, so that you can easily filter out "noisier" sources and focus on more important ones
   - Reads updates from:
       - Nitter
-      - Rotoworld/NBC Sports Edge
+      - NBC Sports Edge
       - Invidious
       - Dumpor
       - Substack
@@ -23,12 +23,11 @@ All subscriptions and settings are managed through `config.edn`. Example:
       {:nitter
        {:channels
         {"adamschefter" {:tags #{:football}}}}
-       :rotoworld
+       :nbcsports
        {:color "#ffcce1"
         :channels
-        {"Headlines"
-         {:url "https://www.nbcsportsedge.com/api/player_news?page%5Blimit%5D=10&sort=-initial_published_date&include=team,league,league.sport&filter%5Bsport_headline%5D=1&filter%5Bleague.meta.drupal_internal__id%5D=21"
-          :tags #{:football}}}}
+        {"NFL Headlines"
+         {:tags #{:football}}}}
        :invidious
        {:color "#faffc7"
         :channels
